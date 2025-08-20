@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prime Insta v1.0</title>
+
+  <style>
+    :root{
+      /* Instagram gradient palette */
+      --ig1: #F58529;
+      --ig2: #DD2A7B;
+      --ig3: #8134AF;
+      --ig4: #515BD4;
+
+      /* Light theme neutrals for profile view */
+      --ig-text: #262626;
+      --ig-muted: #8e8e8e;
+      --ig-border: #dbdbdb;
+      --ig-bg: #fafafa;
+      --ig-white: #fff;
+
+      --shadow: 0 12px 38px rgba(0,0,0,.25);
+      --radius: 16px;
+
+      /* Transitions */
+      --t-fast: 180ms ease;
+      --t-med: 320ms cubic-bezier(.2,.8,.2,1);
+
+      /* Animation timing for fade-ins (fix) */
+      --anim-ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    /* Reset */
+    *,*::before,*::after{ box-sizing: border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      color:#fff;
+      font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+      line-height:1.5;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(135deg, var(--ig1), var(--ig2), var(--ig3), var(--ig4));
+      background-attachment: fixed;
+    }
+    img{ display:block; max-width:100%; }
+
+    /* Loader with Instagram colors */
+    .loader{
+      position:fixed; inset:0; z-index:9999;
+      display:grid; place-items:center;
+      background:
+        radial-gradient(1000px 700px at 85% 15%, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(135deg, var(--ig1), var(--ig2), var(--ig3), var(--ig4));
+      transition: opacity var(--t-med), visibility var(--t-med);
+    }
+    .loader.hidden{ opacity:0; visibility:hidden; }
+    .ig-loader{ position:relative; width:120px; height:120px; filter: drop-shadow(0 12px 28px rgba(0,0,0,.35)); }
+    .ig-ring{
+      width:100%; height:100%; border-radius:50%;
+      background: conic-gradient(from 0deg, var(--ig1), var(--ig2), var(--ig3), var(--ig4), var(--ig1));
+      -webkit-mask: radial-gradient(farthest-side, transparent 64%, #000 66%);
+              mask: radial-gradient(farthest-side, transparent 64%, #000 66%);
+      animation: spin 1.1s linear infinite;
+    }
+    .ig-dot{
+      position:absolute; inset:0; margin:auto; width:18px; height:18px; border-radius:50%; background:#fff;
+      box-shadow: 0 0 0 6px rgba(255,255,255,.15), 0 0 0 12px rgba(255,255,255,.06);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg);} }
+    @keyframes pulse{ 0%,100%{ transform: scale(1); opacity:1; } 50%{ transform: scale(1.25); opacity:.85; } }
+
+    /* Views (SPA) */
+    .app{ min-height:100vh; }
+    .view{
+      display:none; opacity:0; transform: translateY(10px);
+      transition: opacity var(--t-med), transform var(--t-med);
+    }
+    .view.active{ display:block; opacity:1; transform: translateY(0); }
+
+    /* HOME VIEW */
+    .home-wrap{
+      min-height:100vh; display:grid; place-items:center; padding:32px 16px;
+    }
+    .home{
+      width:100%; max-width:880px; text-align:center;
+    }
+    .title{
+      font-weight:800; letter-spacing:.4px; line-height:1.1;
+      font-size: clamp(34px, 6vw, 64px);
+      text-shadow: 0 4px 22px rgba(0,0,0,.35);
+      opacity:0; transform: translateY(10px);
+      animation: fadeUp .8s var(--anim-ease) .1s forwards;
+    }
+    .search-wrap{
+      margin:18px auto 0; display:grid; grid-template-columns: 1fr auto; gap:10px;
+      padding:14px; border-radius: var(--radius);
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow); backdrop-filter: blur(6px); max-width:760px;
+      opacity:0; transform: translateY(10px);
+      animation: fadeUp .8s var(--anim-ease) .25s forwards;
+    }
+    .search-input{
+      height:56px; width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08); color:#fff; padding:0 16px; font-size:18px; outline:none;
+      transition: box-shadow var(--t-fast), border var(--t-fast), background var(--t-fast);
+    }
+    .search-input::placeholder{ color: rgba(255,255,255,.85); }
+    .search-input:focus{ border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.12); box-shadow: 0 0 0 5px rgba(255,255,255,.16); }
+    .search-btn{
+      height:56px; min-width:56px; padding:0 18px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      border-radius:12px; color:#fff; font-weight:700; letter-spacing:.2px; border:1px solid rgba(255,255,255,.25);
+      background: linear-gradient(135deg, var(--ig1), var(--ig2), var(--ig3), var(--ig4));
+      box-shadow: 0 12px 30px rgba(0,0,0,.35), 0 0 0 4px rgba(221,42,123,.25);
+      cursor:pointer; transition: transform var(--t-fast), box-shadow var(--t-fast), filter var(--t-fast);
+    }
+    .search-btn:hover{ transform: translateY(-1px); box-shadow: 0 16px 40px rgba(0,0,0,.42), 0 0 0 6px rgba(221,42,123,.28); filter: saturate(1.05) brightness(1.03); }
+    .search-btn svg{ width:22px; height:22px; }
+
+    @keyframes fadeUp{ to{ opacity:1; transform: translateY(0);} }
+
+    /* RESULTS VIEW (Instagram light profile look) */
+    .results-wrap{
+      background: var(--ig-bg);
+      min-height:100vh;
+      color: var(--ig-text);
+    }
+    .topbar{
+      position: sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      background: var(--ig-white);
+      border-bottom: 1px solid var(--ig-border);
+    }
+    .topbar .left{ display:flex; align-items:center; gap:12px; }
+    .back-btn{
+      width:36px; height:36px; border-radius:50%;
+      display:grid; place-items:center;
+      border:1px solid var(--ig-border); background: var(--ig-white);
+      cursor:pointer;
+    }
+    .back-btn:hover{ background:#f4f4f4; }
+    .top-username{
+      font-weight:600; font-size:16px;
+    }
+
+    .profile{
+      width:100%; max-width:975px; margin:0 auto; padding:24px 16px 40px;
+    }
+    /* Header */
+    .profile-header{
+      display:grid; grid-template-columns: 1fr 2.2fr; gap:30px; align-items:center;
+      padding-bottom:24px; border-bottom:1px solid var(--ig-border);
+    }
+    .avatar{
+      width: 150px; height: 150px; border-radius:50%;
+      background:#eee; overflow:hidden; border:1px solid var(--ig-border);
+      margin: 0 auto;
+    }
+    .avatar img{ width:100%; height:100%; object-fit:cover; }
+    .ph-info{ display:grid; gap:12px; }
+    .row1{
+      display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+    }
+    .username{
+      font-size:20px; font-weight:400; color: var(--ig-text);
+    }
+    .btn{
+      height:32px; padding:0 12px; border-radius:8px; font-weight:600; border:1px solid var(--ig-border); background:#efefef; color:var(--ig-text);
+      cursor:pointer;
+    }
+    .btn:hover{ background:#e5e5e5; }
+    .btn.primary{ background:#0095f6; border-color:#0095f6; color:#fff; }
+    .btn.primary:hover{ background:#0085dd; }
+    .icon-btn{
+      width:32px; height:32px; display:grid; place-items:center; border-radius:8px; border:1px solid var(--ig-border); background:#fff; cursor:pointer;
+    }
+    .icon-btn:hover{ background:#f4f4f4; }
+    .row2{
+      display:flex; gap:24px; flex-wrap:wrap;
+    }
+    .row2 .stat{ display:flex; gap:6px; }
+    .row2 .stat b{ font-weight:600; }
+    .name{ font-weight:600; }
+    .bio{ color: var(--ig-text); }
+
+    /* Tabs */
+    .tabs{
+      display:flex; align-items:center; justify-content:center; gap:40px;
+      border-top:1px solid var(--ig-border);
+      border-bottom:1px solid var(--ig-border);
+      margin-top:24px;
+      background: var(--ig-white);
+    }
+    .tab{
+      display:inline-flex; align-items:center; gap:6px; padding:14px 0; font-size:12px;
+      letter-spacing:.1em; text-transform:uppercase; color: var(--ig-muted);
+      border-top:1px solid transparent;
+    }
+    .tab.active{
+      color: var(--ig-text);
+      border-top-color: var(--ig-text);
+      font-weight:600;
+    }
+    .tab svg{ width:14px; height:14px; }
+
+    /* Grid posts */
+    .grid{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      margin-top:2px;
+    }
+    .post{
+      position:relative; aspect-ratio: 1 / 1; background:#eee; overflow:hidden;
+    }
+    .post img{
+      width:100%; height:100%; object-fit:cover; transition: transform var(--t-fast);
+    }
+    .post:hover img{ transform: scale(1.03); }
+    .post .overlay{
+      position:absolute; inset:0; background: rgba(0,0,0,.18);
+      opacity:0; transition: opacity var(--t-fast);
+      display:flex; align-items:center; justify-content:center; gap:14px; color:#fff; font-weight:700;
+    }
+    .post:hover .overlay{ opacity:1; }
+
+    /* Mobile adjustments */
+    @media (max-width: 736px){
+      .profile-header{ grid-template-columns: 1fr; gap:16px; }
+      .avatar{ width:96px; height:96px; }
+      .row2{ justify-content: space-between; }
+      .tabs{ gap:24px; }
+      .profile{ padding:16px 0 40px; }
+      .topbar{ padding:10px 8px; }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .loader, .ig-ring, .ig-dot, .view{ transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loader -->
+  <div id="loader" class="loader" aria-busy="true" aria-live="polite">
+    <div class="ig-loader" aria-hidden="true">
+      <div class="ig-ring"></div>
+      <div class="ig-dot"></div>
+    </div>
+  </div>
+
+  <main class="app">
+    <!-- HOME VIEW -->
+    <section id="home" class="view active" aria-label="Home">
+      <div class="home-wrap">
+        <div class="home">
+          <!-- Replaceable title -->
+          <h1 id="homeTitle" class="title">Prime Insta v1.0</h1>
+
+          <!-- Search -->
+          <form id="searchForm" class="search-wrap" autocomplete="off" novalidate>
+            <input id="searchInput" class="search-input" type="text" placeholder="username" aria-label="Search" />
+            <button id="searchBtn" class="search-btn" type="submit" aria-label="Search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTS VIEW (Instagram-style profile) -->
+    <section id="results" class="view" aria-label="Search results">
+      <div class="results-wrap">
+        <!-- Top bar -->
+        <div class="topbar">
+          <div class="left">
+            <button id="backHome" class="back-btn" aria-label="Back">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <div id="topUsername" class="top-username">username</div>
+          </div>
+          <div class="right"></div>
+        </div>
+
+        <div class="profile">
+          <!-- Header -->
+          <div class="profile-header">
+            <div class="avatar">
+              <img id="resAvatar" src="images/profile.jpg" alt="Profile avatar" />
+            </div>
+
+            <div class="ph-info">
+              <div class="row1">
+                <div id="resUser" class="username">username</div>
+                <button class="btn">Message</button>
+                <button class="btn">Follow</button>
+                <button class="icon-btn" aria-label="More">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="19" cy="12" r="1"></circle>
+                    <circle cx="5" cy="12" r="1"></circle>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="row2">
+                <div class="stat"><b id="postCount">10</b> posts</div>
+                <div class="stat"><b id="followersCount">1,234</b> followers</div>
+                <div class="stat"><b id="followingCount">321</b> following</div>
+              </div>
+
+              <div class="row3">
+                <div id="resName" class="name">Prfile Name</div>
+                <div id="resBio" class="bio">Your bio goes here. Replace this text with your own description.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <div class="tab active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Posts</span>
+            </div>
+          </div>
+
+          <!-- Posts grid (10 items) -->
+          <div id="postsGrid" class="grid" aria-label="Posts grid"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Ad link — replace with your own
+    const AD_URL = "https://www.profitableratecpm.com/s3322u1zrt?key=ffe0bfb6541172e28ce17e6ecb1a188c";
+
+    // Replaceable profile data
+    const PROFILE = {
+      name: "Manushi Lakmali",
+      username: "manushi_29",
+      avatar: "images/profile.jpg",
+      bio: "Beauty Buttie",
+      followers: "2",
+      following: "25",
+      posts: [
+        "images/posts/p1.jpeg",
+        "images/posts/p2.jpeg",
+        "images/posts/p3.jpeg",
+        "images/posts/p4.jpeg",
+        "images/posts/p5.jpeg",
+        "images/posts/p6.jpeg",
+        "images/posts/p7.jpeg",
+        "images/posts/p8.jpeg",
+        "images/posts/p9.jpeg",
+        "images/posts/p10.jpeg"
+      ]
+    };
+
+    // SPA helpers
+    const views = {
+      home: document.getElementById("home"),
+      results: document.getElementById("results")
+    };
+    function navigate(to){
+      Object.entries(views).forEach(([key, el]) => {
+        el.classList.toggle("active", key === to);
+        el.setAttribute("aria-hidden", key === to ? "false" : "true");
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Loader hide
+    window.addEventListener("load", () => {
+      setTimeout(() => document.getElementById("loader").classList.add("hidden"), 650);
+    });
+
+    // Reuse the same full-screen loader for pre-results spinner
+const appLoader = document.getElementById("loader");
+function showAppLoader(){
+  appLoader.classList.remove("hidden");
+  appLoader.setAttribute("aria-busy", "true");
+}
+function hideAppLoader(){
+  appLoader.classList.add("hidden");
+  appLoader.setAttribute("aria-busy", "false");
+}
+
+    // Build posts grid
+    const postsGrid = document.getElementById("postsGrid");
+    function renderPosts(list){
+      postsGrid.innerHTML = "";
+      const total = Math.min(list.length, 10);
+      for(let i=0; i<total; i++){
+        const src = list[i];
+        const item = document.createElement("a");
+        item.href = "javascript:void(0)";
+        item.className = "post";
+        item.innerHTML = `
+          <img src="${src}" alt="Post ${i+1}" loading="lazy" />
+          <div class="overlay">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+        `;
+        postsGrid.appendChild(item);
+      }
+      document.getElementById("postCount").textContent = total;
+    }
+
+    // Populate profile fields
+    function populateProfile(data, overrideUsername){
+      const uname = overrideUsername || data.username;
+      document.getElementById("resAvatar").src = data.avatar;
+      document.getElementById("resUser").textContent = uname;
+      document.getElementById("topUsername").textContent = uname;
+      document.getElementById("resName").textContent = data.name;
+      document.getElementById("resBio").textContent = data.bio;
+      document.getElementById("followersCount").textContent = data.followers;
+      document.getElementById("followingCount").textContent = data.following;
+      renderPosts(data.posts);
+    }
+
+    // Search behavior with ad gating
+    const form = document.getElementById("searchForm");
+    const input = document.getElementById("searchInput");
+    const backHome = document.getElementById("backHome");
+
+    let searchClicks = 0;
+
+    function openAd(){
+      try{ window.open(AD_URL, "_blank", "noopener,noreferrer"); }catch(e){}
+    }
+
+    form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  searchClicks++;
+  const typed = input.value.trim();
+
+  if (searchClicks <= 3) {
+    openAd();
+    return;
+  }
+
+  showAppLoader();
+  setTimeout(() => {
+    populateProfile(PROFILE, typed || PROFILE.username);
+    navigate("results");
+    hideAppLoader();
+  }, 1000);
+});
+
+    backHome.addEventListener("click", () => {
+      navigate("home");
+      // optional: input.value = "";
+    });
+
+    // Initial populate (for safety)
+    populateProfile(PROFILE);
+  </script>
+</body>
+</html>
