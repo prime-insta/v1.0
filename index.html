@@ -208,28 +208,6 @@
     .backHome:hover{ transform: translateY(-1px); box-shadow: 0 10px 22px rgba(151,176,255,.38); }
     .backHome svg{ width: 20px; height: 20px; }
 
-    /* Ad slots under search */
-    .ad-slot{
-      margin: 16px auto 0;
-      max-width: 760px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-    }
-    .ad-slot img{
-      display:block;
-      height:auto;
-      border-radius: 12px;
-      box-shadow: 0 8px 26px rgba(0,0,0,.28);
-    }
-    .ad-desktop{ display: none; }
-    .ad-mobile{ display: block; }
-    @media (min-width: 768px){
-      .ad-desktop{ display: block; }
-      .ad-mobile{ display: none; }
-    }
-
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce){
       .loader, .ig-ring, .ig-dot, .view, .drop{ transition: none !important; animation: none !important; }
@@ -263,24 +241,6 @@
               </svg>
             </button>
           </form>
-
-          <!-- Adsterra banners (replace href with your referral link) -->
-          <div class="ad-slot" aria-label="Advertisement">
-            <div class="ad-desktop">
-              <a href="" target="_blank" rel="nofollow noopener noreferrer">
-                <img alt="Adsterra 728x90 banner" width="728" height="90"
-                  src="https://landings-cdn.adsterratech.com/referralBanners/png/728%20x%2090%20px.png" />
-              </a>
-            </div>
-            <div class="ad-mobile">
-              <a href="" target="_blank" rel="nofollow noopener noreferrer">
-                <img alt="Adsterra 300x250 banner" width="300" height="250"
-                  src="https://landings-cdn.adsterratech.com/referralBanners/png/300%20x%20250%20px.png" />
-              </a>
-            </div>
-          </div>
-          <!-- /Adsterra banners -->
-
         </div>
       </div>
     </section>
